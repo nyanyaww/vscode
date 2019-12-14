@@ -878,11 +878,14 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 			}
 		}
 
-		// Update model
-		this._group.openEditor(editor, openEditorOptions);
+		// Update model and make sure to continue to use the
+		// editor we get from the model. It is possible that
+		// the editor was already opened and we want to ensure
+		// that we use the existing instance in that case.
+		const openedEditor = this._group.openEditor(editor, openEditorOptions);
 
 		// Show editor
-		return this.doShowEditor(editor, !!openEditorOptions.active, options);
+		return this.doShowEditor(openedEditor, !!openEditorOptions.active, options);
 	}
 
 	private async doShowEditor(editor: EditorInput, active: boolean, options?: EditorOptions): Promise<IEditor | undefined> {
@@ -1058,20 +1061,22 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 		}
 
 		const currentIndex = this._group.indexOf(editor);
-		if (currentIndex === moveToIndex) {
-			return; // do nothing if editor is already at the given index
+		if (currentIndex === -1 || currentIndex === moveToIndex) {
+			return; // do nothing if editor unknown in model or is already at the given index
 		}
 
+		const existingEditor = this.group.getEditorByIndex(currentIndex)!;
+
 		// Update model
-		this._group.moveEditor(editor, moveToIndex);
-		this._group.pin(editor);
+		this._group.moveEditor(existingEditor, moveToIndex);
+		this._group.pin(existingEditor);
 
 		// Forward to title area
-		this.titleAreaControl.moveEditor(editor, currentIndex, moveToIndex);
-		this.titleAreaControl.pinEditor(editor);
+		this.titleAreaControl.moveEditor(existingEditor, currentIndex, moveToIndex);
+		this.titleAreaControl.pinEditor(existingEditor);
 
 		// Event
-		this._onDidGroupChange.fire({ kind: GroupChangeKind.EDITOR_MOVE, editor });
+		this._onDidGroupChange.fire({ kind: GroupChangeKind.EDITOR_MOVE, editor: existingEditor });
 	}
 
 	private doMoveOrCopyEditorAcrossGroups(editor: EditorInput, target: IEditorGroupView, moveOptions: IMoveEditorOptions = Object.create(null), keepCopy?: boolean): void {
