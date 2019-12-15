@@ -264,6 +264,16 @@ suite('Workbench editor groups', () => {
 		assert.equal(group.contains(input2, true), false);
 		assert.equal(group.contains(diffInput1), false);
 		assert.equal(group.contains(diffInput2), false);
+
+		const input3 = input(undefined, true, URI.parse('foo://bar'));
+
+		group.openEditor(input3, { pinned: true, active: true });
+		assert.equal(group.contains({ resource: URI.parse('foo://barsomething') }), false);
+		assert.equal(group.contains({ resource: URI.parse('foo://bar') }), true);
+
+		group.closeEditor(input3);
+
+		assert.equal(group.contains({ resource: URI.parse('foo://bar') }), false);
 	});
 
 	test('group serialization', function () {

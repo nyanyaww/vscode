@@ -9,7 +9,7 @@ import { IEditor } from 'vs/editor/common/editorCommon';
 import { ITextEditorOptions, IResourceInput, ITextEditorSelection } from 'vs/platform/editor/common/editor';
 import { IEditorInput, IEditor as IBaseEditor, Extensions as EditorExtensions, EditorInput, IEditorCloseEvent, IEditorInputFactoryRegistry, toResource, IEditorIdentifier, GroupIdentifier, Extensions } from 'vs/workbench/common/editor';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { IHistoryService } from 'vs/workbench/services/history/common/history';
+import { IHistoryService, INavigateAcrossEditorsOptions } from 'vs/workbench/services/history/common/history';
 import { FileChangesEvent, IFileService, FileChangeType, FILES_EXCLUDE_CONFIG } from 'vs/platform/files/common/files';
 import { Selection } from 'vs/editor/common/core/selection';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
@@ -613,10 +613,10 @@ export class HistoryService extends Disposable implements IHistoryService {
 		}
 	}
 
-	forward(acrossEditors?: boolean): void {
+	forward(options?: INavigateAcrossEditorsOptions): void {
 		if (this.stack.length > this.index + 1) {
-			if (acrossEditors) {
-				this.doForwardAcrossEditors();
+			if (options) {
+				this.doForwardAcrossEditors(options.inGroup);
 			} else {
 				this.doForwardInEditors();
 			}
@@ -635,28 +635,45 @@ export class HistoryService extends Disposable implements IHistoryService {
 		this.updateContextKeys();
 	}
 
-	private doForwardAcrossEditors(): void {
+	private doForwardAcrossEditors(inGroup?: GroupIdentifier): void {
 		let currentIndex = this.index;
 		const currentEntry = this.stack[this.index];
 
 		// Find the next entry that does not match our current entry
+		// and optionally that is not in a different group if instructed
 		while (this.stack.length > currentIndex + 1) {
 			currentIndex++;
 
-			const previousEntry = this.stack[currentIndex];
-			if (!this.matches(currentEntry.input, previousEntry.input)) {
-				this.setIndex(currentIndex);
-				this.navigate(true /* across editors */);
-
+			if (this.doNavigateAcrossEditors(currentIndex, currentEntry, inGroup)) {
 				break;
 			}
 		}
 	}
 
-	back(acrossEditors?: boolean): void {
+	private doNavigateAcrossEditors(currentIndex: number, currentEntry: IStackEntry, inGroup?: GroupIdentifier): boolean {
+		const previousEntry = this.stack[currentIndex];
+		if (this.matches(currentEntry.input, previousEntry.input)) {
+			return false; // still same input - return
+		}
+
+		if (typeof inGroup === 'number') {
+			const group = this.editorGroupService.getGroup(inGroup);
+			if (!group || !group.isOpened(previousEntry.input)) {
+				return false; // different group - return
+			}
+		}
+
+		// Actually navigate
+		this.setIndex(currentIndex);
+		this.navigate(true /* across editors */, inGroup);
+
+		return true;
+	}
+
+	back(options?: INavigateAcrossEditorsOptions): void {
 		if (this.index > 0) {
-			if (acrossEditors) {
-				this.doBackAcrossEditors();
+			if (options) {
+				this.doBackAcrossEditors(options.inGroup);
 			} else {
 				this.doBackInEditors();
 			}
@@ -677,19 +694,16 @@ export class HistoryService extends Disposable implements IHistoryService {
 		this.navigate();
 	}
 
-	private doBackAcrossEditors(): void {
+	private doBackAcrossEditors(inGroup?: GroupIdentifier): void {
 		let currentIndex = this.index;
 		const currentEntry = this.stack[this.index];
 
-		// Find the next previous entry that does not match our current entry
+		// Find the next entry that does not match our current entry
+		// and optionally that is not in a different group if instructed
 		while (currentIndex > 0) {
 			currentIndex--;
 
-			const previousEntry = this.stack[currentIndex];
-			if (!this.matches(currentEntry.input, previousEntry.input)) {
-				this.setIndex(currentIndex);
-				this.navigate(true /* across editors */);
-
+			if (this.doNavigateAcrossEditors(currentIndex, currentEntry, inGroup)) {
 				break;
 			}
 		}
@@ -726,13 +740,13 @@ export class HistoryService extends Disposable implements IHistoryService {
 		this.canNavigateForwardContextKey.set(this.stack.length > 0 && this.index < this.stack.length - 1);
 	}
 
-	private navigate(acrossEditors?: boolean): void {
+	private navigate(acrossEditors?: boolean, inGroup?: GroupIdentifier): void {
 		this.navigatingInStack = true;
 
-		this.doNavigate(this.stack[this.index], !acrossEditors).finally(() => this.navigatingInStack = false);
+		this.doNavigate(this.stack[this.index], !acrossEditors, inGroup).finally(() => this.navigatingInStack = false);
 	}
 
-	private doNavigate(location: IStackEntry, withSelection: boolean): Promise<IBaseEditor | undefined> {
+	private doNavigate(location: IStackEntry, withSelection: boolean, inGroup?: GroupIdentifier): Promise<IBaseEditor | undefined> {
 		const options: ITextEditorOptions = {
 			revealIfOpened: true // support to navigate across editor groups
 		};
@@ -745,10 +759,10 @@ export class HistoryService extends Disposable implements IHistoryService {
 		}
 
 		if (location.input instanceof EditorInput) {
-			return this.editorService.openEditor(location.input, options);
+			return this.editorService.openEditor(location.input, options, inGroup);
 		}
 
-		return this.editorService.openEditor({ resource: (location.input as IResourceInput).resource, options });
+		return this.editorService.openEditor({ resource: (location.input as IResourceInput).resource, options }, inGroup);
 	}
 
 	protected handleEditorSelectionChangeEvent(editor?: IBaseEditor, event?: ICursorPositionChangedEvent): void {

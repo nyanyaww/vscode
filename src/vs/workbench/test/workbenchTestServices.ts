@@ -32,7 +32,7 @@ import { ModelServiceImpl } from 'vs/editor/common/services/modelServiceImpl';
 import { ITextFileStreamContent, ITextFileService, IResourceEncoding, IReadTextFileOptions } from 'vs/workbench/services/textfile/common/textfiles';
 import { parseArgs, OPTIONS } from 'vs/platform/environment/node/argv';
 import { IModeService } from 'vs/editor/common/services/modeService';
-import { IHistoryService } from 'vs/workbench/services/history/common/history';
+import { IHistoryService, INavigateAcrossEditorsOptions } from 'vs/workbench/services/history/common/history';
 import { IInstantiationService, ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { TestConfigurationService } from 'vs/platform/configuration/test/common/testConfigurationService';
 import { MenuBarVisibility, IWindowConfiguration, IWindowOpenable, IOpenWindowOptions, IOpenEmptyWindowOptions, IOpenedWindow } from 'vs/platform/windows/common/windows';
@@ -354,10 +354,10 @@ export class TestHistoryService implements IHistoryService {
 	public reopenLastClosedEditor(): void {
 	}
 
-	public forward(_acrossEditors?: boolean): void {
+	public forward(options?: INavigateAcrossEditorsOptions): void {
 	}
 
-	public back(_acrossEditors?: boolean): void {
+	public back(options?: INavigateAcrossEditorsOptions): void {
 	}
 
 	public last(): void {
@@ -832,7 +832,7 @@ export class TestEditorGroupView implements IEditorGroupView {
 		throw new Error('not implemented');
 	}
 
-	isOpened(_editor: IEditorInput): boolean {
+	isOpened(_editor: IEditorInput | IResourceInput): boolean {
 		return false;
 	}
 

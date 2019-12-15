@@ -5,10 +5,14 @@
 
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IResourceInput } from 'vs/platform/editor/common/editor';
-import { IEditorInput, IEditorIdentifier } from 'vs/workbench/common/editor';
+import { IEditorInput, IEditorIdentifier, GroupIdentifier } from 'vs/workbench/common/editor';
 import { URI } from 'vs/base/common/uri';
 
 export const IHistoryService = createDecorator<IHistoryService>('historyService');
+
+export interface INavigateAcrossEditorsOptions {
+	inGroup?: GroupIdentifier;
+}
 
 export interface IHistoryService {
 
@@ -27,18 +31,18 @@ export interface IHistoryService {
 	/**
 	 * Navigate forwards in history.
 	 *
-	 * @param acrossEditors instructs the history to skip navigation entries that
-	 * are only within the same document.
+	 * @param options allows to be more specific to navigate across
+	 * editors of all groups or a specific group.
 	 */
-	forward(acrossEditors?: boolean): void;
+	forward(options?: INavigateAcrossEditorsOptions): void;
 
 	/**
 	 * Navigate backwards in history.
 	 *
-	 * @param acrossEditors instructs the history to skip navigation entries that
-	 * are only within the same document.
+	 * @param options allows to be more specific to navigate across
+	 * editors of all groups or a specific group.
 	 */
-	back(acrossEditors?: boolean): void;
+	back(options?: INavigateAcrossEditorsOptions): void;
 
 	/**
 	 * Navigate forward or backwards to previous entry in history.

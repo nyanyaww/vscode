@@ -1406,7 +1406,7 @@ export class OpenNextRecentlyUsedEditorAction extends Action {
 	}
 
 	run(): Promise<any> {
-		this.historyService.forward(true);
+		this.historyService.forward({ inGroup: undefined /* across all groups */ });
 
 		return Promise.resolve();
 	}
@@ -1422,7 +1422,49 @@ export class OpenPreviousRecentlyUsedEditorAction extends Action {
 	}
 
 	run(): Promise<any> {
-		this.historyService.back(true);
+		this.historyService.back({ inGroup: undefined /* across all groups */ });
+
+		return Promise.resolve();
+	}
+}
+
+export class OpenNextRecentlyUsedEditorInGroupAction extends Action {
+
+	static readonly ID = 'workbench.action.openNextRecentlyUsedEditorInGroup';
+	static readonly LABEL = nls.localize('openNextRecentlyUsedEditorInGroup', "Open Next Recently Used Editor In Group");
+
+	constructor(
+		id: string,
+		label: string,
+		@IHistoryService private readonly historyService: IHistoryService,
+		@IEditorGroupsService private readonly editorGroupsService: IEditorGroupsService
+	) {
+		super(id, label);
+	}
+
+	run(): Promise<any> {
+		this.historyService.forward({ inGroup: this.editorGroupsService.activeGroup.id });
+
+		return Promise.resolve();
+	}
+}
+
+export class OpenPreviousRecentlyUsedEditorInGroupAction extends Action {
+
+	static readonly ID = 'workbench.action.openPreviousRecentlyUsedEditorInGroup';
+	static readonly LABEL = nls.localize('openPreviousRecentlyUsedEditorInGroup', "Open Previous Recently Used Editor In Group");
+
+	constructor(
+		id: string,
+		label: string,
+		@IHistoryService private readonly historyService: IHistoryService,
+		@IEditorGroupsService private readonly editorGroupsService: IEditorGroupsService
+	) {
+		super(id, label);
+	}
+
+	run(): Promise<any> {
+		this.historyService.back({ inGroup: this.editorGroupsService.activeGroup.id });
 
 		return Promise.resolve();
 	}
