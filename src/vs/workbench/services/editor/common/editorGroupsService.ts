@@ -380,6 +380,11 @@ export interface IEditorGroup {
 	readonly onDidGroupChange: Event<IGroupChangeEvent>;
 
 	/**
+	 * An event that is fired when the group gets disposed.
+	 */
+	readonly onWillDispose: Event<void>;
+
+	/**
 	 * A unique identifier of this group that remains identical even if the
 	 * group is moved to different locations.
 	 */

@@ -5,7 +5,7 @@
 
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IResourceInput } from 'vs/platform/editor/common/editor';
-import { IEditorInput } from 'vs/workbench/common/editor';
+import { IEditorInput, IEditorIdentifier } from 'vs/workbench/common/editor';
 import { URI } from 'vs/base/common/uri';
 
 export const IHistoryService = createDecorator<IHistoryService>('historyService');
@@ -61,7 +61,7 @@ export interface IHistoryService {
 	clearRecentlyOpened(): void;
 
 	/**
-	 * Get the entire history of opened editors.
+	 * Get the entire history of editors that were opened.
 	 */
 	getHistory(): Array<IEditorInput | IResourceInput>;
 
@@ -79,4 +79,9 @@ export interface IHistoryService {
 	 * @param schemeFilter filter to restrict roots by scheme.
 	 */
 	getLastActiveFile(schemeFilter: string): URI | undefined;
+
+	/**
+	 * Get a list of most recently used editors that are open.
+	 */
+	getMostRecentlyUsedOpenEditors(): Array<IEditorIdentifier>;
 }

@@ -69,7 +69,7 @@ import { timeout } from 'vs/base/common/async';
 import { IViewletService } from 'vs/workbench/services/viewlet/browser/viewlet';
 import { ViewletDescriptor, Viewlet } from 'vs/workbench/browser/viewlet';
 import { IViewlet } from 'vs/workbench/common/viewlet';
-import { IStorageService, InMemoryStorageService } from 'vs/platform/storage/common/storage';
+import { IStorageService, InMemoryStorageService, IWillSaveStateEvent } from 'vs/platform/storage/common/storage';
 import { isLinux, isMacintosh } from 'vs/base/common/platform';
 import { LabelService } from 'vs/workbench/services/label/common/labelService';
 import { IDimension } from 'vs/platform/layout/browser/layoutService';
@@ -376,6 +376,10 @@ export class TestHistoryService implements IHistoryService {
 		return [];
 	}
 
+	public getMostRecentlyUsedOpenEditors(): Array<IEditorIdentifier> {
+		return [];
+	}
+
 	public getLastActiveWorkspaceRoot(_schemeFilter: string): URI | undefined {
 		return this.root;
 	}
@@ -677,7 +681,10 @@ export class TestPanelService implements IPanelService {
 	}
 }
 
-export class TestStorageService extends InMemoryStorageService { }
+export class TestStorageService extends InMemoryStorageService {
+	readonly _onWillSaveState: Emitter<IWillSaveStateEvent> = this._register(new Emitter<IWillSaveStateEvent>());
+	readonly onWillSaveState: Event<IWillSaveStateEvent> = this._onWillSaveState.event;
+}
 
 export class TestEditorGroupsService implements IEditorGroupsService {
 
@@ -902,7 +909,7 @@ export class TestEditorInput extends EditorInput implements IFileEditorInput {
 	public gotReverted = false;
 	public dirty = false;
 	private fails = false;
-	constructor(private resource: URI) { super(); }
+	constructor(public resource: URI) { super(); }
 
 	getTypeId() { return 'testEditorInputForEditorService'; }
 	resolve(): Promise<IEditorModel | null> { return !this.fails ? Promise.resolve(null) : Promise.reject(new Error('fails')); }
