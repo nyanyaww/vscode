@@ -389,17 +389,17 @@ export class HistoryService extends Disposable implements IHistoryService {
 	private readonly editorHistoryListeners: Map<EditorInput, DisposableStore> = new Map();
 	private readonly editorStackListeners: Map<EditorInput, DisposableStore> = new Map();
 
-	private stack: IStackEntry[];
-	private index: number;
-	private lastIndex: number;
+	private stack: IStackEntry[] = [];
+	private index = -1;
+	private lastIndex = -1;
 	private navigatingInStack = false;
 	private currentTextEditorState: TextEditorState | null = null;
 
 	private lastEditLocation: IStackEntry | undefined;
 
 	private history: Array<IEditorInput | IResourceInput> = [];
-	private recentlyClosedFiles: IRecentlyClosedFile[];
-	private loaded: boolean;
+	private recentlyClosedFiles: IRecentlyClosedFile[] = [];
+	private loaded = false;
 	private resourceFilter: ResourceGlobMatcher;
 
 	private canNavigateBackContextKey: IContextKey<boolean>;
@@ -426,11 +426,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 		this.canNavigateForwardContextKey = (new RawContextKey<boolean>('canNavigateForward', false)).bindTo(this.contextKeyService);
 		this.canNavigateToLastEditLocationContextKey = (new RawContextKey<boolean>('canNavigateToLastEditLocation', false)).bindTo(this.contextKeyService);
 
-		this.index = -1;
-		this.lastIndex = -1;
-		this.stack = [];
-		this.recentlyClosedFiles = [];
-		this.loaded = false;
 		this.resourceFilter = this._register(instantiationService.createInstance(
 			ResourceGlobMatcher,
 			(root?: URI) => this.getExcludes(root),
@@ -585,10 +580,8 @@ export class HistoryService extends Disposable implements IHistoryService {
 	}
 
 	reopenLastClosedEditor(): void {
-		this.ensureHistoryLoaded();
-
 		let lastClosedFile = this.recentlyClosedFiles.pop();
-		while (lastClosedFile && this.isFileOpened(lastClosedFile.resource, this.editorGroupService.activeGroup)) {
+		while (lastClosedFile && this.editorGroupService.activeGroup.isOpened({ resource: lastClosedFile.resource })) {
 			lastClosedFile = this.recentlyClosedFiles.pop(); // pop until we find a file that is not opened
 		}
 
@@ -1078,18 +1071,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 		const input = arg1 as IResourceInput;
 
 		this.workspacesService.removeFromRecentlyOpened([input.resource]);
-	}
-
-	private isFileOpened(resource: URI, group: IEditorGroup): boolean {
-		if (!group) {
-			return false;
-		}
-
-		if (!this.editorService.isOpen({ resource }, group)) {
-			return false; // fast check
-		}
-
-		return group.editors.some(e => this.matchesFile(resource, e));
 	}
 
 	private matches(arg1: IEditorInput | IResourceInput | FileChangesEvent, inputB: IEditorInput | IResourceInput): boolean {
